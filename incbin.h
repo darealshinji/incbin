@@ -82,6 +82,14 @@
 #define INCBIN_VA_ARG_COUNTER(_1, _2, _3, N, ...) N
 #define INCBIN_VA_ARGC(...) INCBIN_VA_ARG_COUNTER(__VA_ARGS__, 3, 2, 1, 0)
 
+#if defined(_MSC_VER)
+#  if defined(__clang__)
+#     define INCBIN_CLANGCL 1
+#  else
+#     define INCBIN_MSCL 1
+#  endif
+#endif
+
 /* Green Hills uses a different directive for including binary data */
 #if defined(__ghs__)
 #  if (__ghs_asm == 2)
@@ -94,11 +102,11 @@
 #  define INCBIN_MACRO ".incbin"
 #endif
 
-#ifndef _MSC_VER
-#  define INCBIN_ALIGN \
-    __attribute__((aligned(INCBIN_ALIGNMENT)))
+#ifdef INCBIN_MSCL
+/* On cl.exe we don't use inline assembly, so there's no reason to set an alignment */
+#  define INCBIN_ALIGN /* __declspec(align(INCBIN_ALIGNMENT)) */
 #else
-#  define INCBIN_ALIGN __declspec(align(INCBIN_ALIGNMENT))
+#  define INCBIN_ALIGN __attribute__((aligned(INCBIN_ALIGNMENT)))
 #endif
 
 #if defined(__arm__) || /* GNU C and RealView */ \
@@ -186,7 +194,7 @@
 #  define INCBIN_TYPE(...)
 #else
 #  define INCBIN_SECTION         ".section " INCBIN_OUTPUT_SECTION "\n"
-#  define INCBIN_GLOBAL(NAME)    ".global " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME "\n"
+#  define INCBIN_GLOBAL(NAME)    ".global " INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME "\n"
 #  if defined(__ghs__)
 #    define INCBIN_INT           ".word "
 #  else
@@ -200,8 +208,8 @@
 #  if defined(INCBIN_ARM)
 /* On arm assemblers, `@' is used as a line comment token */
 #    define INCBIN_TYPE(NAME)    ".type " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME ", %object\n"
-#  elif defined(__MINGW32__) || defined(__MINGW64__)
-/* Mingw doesn't support this directive either */
+#  elif defined(__MINGW32__) || defined(_MSC_VER)
+/* Directive is not supported */
 #    define INCBIN_TYPE(NAME)
 #  else
 /* It's safe to use `@' on other architectures */
@@ -408,7 +416,7 @@
  * To externally reference the data included by this in another translation unit
  * please @see INCBIN_EXTERN.
  */
-#ifdef _MSC_VER
+#ifdef INCBIN_MSCL
 #  define INCBIN(NAME, FILENAME) \
       INCBIN_EXTERN(NAME)
 #else
@@ -477,9 +485,9 @@
  * To externally reference the data included by this in another translation unit
  * please @see INCBIN_EXTERN.
  */
-#if defined(_MSC_VER)
+#if defined(INCBIN_MSCL)
 #  define INCTXT(NAME, FILENAME) \
-     INCBIN_EXTERN(NAME)
+     INCBIN_EXTERN_2(char, NAME)
 #else
 #  define INCTXT(NAME, FILENAME) \
      INCBIN_COMMON(char, NAME, FILENAME, INCBIN_BYTE "0\n")

@@ -104,7 +104,7 @@ static const char *styled(int style, int ident) {
 }
 
 int main(int argc, char **argv) {
-    int ret = 0, i, paths, files = 0, style = kCamel;
+    int ret = 0, i, paths, files = 0, style = kCamel, written = 0;
     char outfile[FILENAME_MAX] = "data.c";
     char search_paths[SEARCH_PATHS_MAX][PATH_MAX];
     char prefix[FILENAME_MAX] = "g";
@@ -263,6 +263,7 @@ usage:
                     fprintf(out, i != size - 1 ? "0x%02X, " : "0x%02X", data[i]);
                     count++;
                 }
+                written++;
                 free(data);
                 fclose(f);
             }
@@ -282,6 +283,7 @@ end:
         fprintf(out, "#endif\n");
         fclose(out);
         printf("generated `%s'\n", outfile);
+        printf("number of files included: %d\n", written);
         return 0;
     }
 
